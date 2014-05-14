@@ -1,7 +1,16 @@
 <?php
 
+namespace Alexsoft;
+
 /**
  * Neat and tidy cURL wrapper for PHP
+ *
+ * @method string get
+ * @method string head
+ * @method string post
+ * @method string put
+ * @method string patch
+ * @method string delete
  *
  * @package Curl
  * @author  Alex Plekhanov
@@ -9,9 +18,6 @@
  * @license MIT
  * @version 0.4.0-dev
  */
-
-namespace Alexsoft;
-
 class Curl {
 	const VERSION = '0.4.0-dev';
 
@@ -20,68 +26,67 @@ class Curl {
 	const HEAD = 'HEAD';
 	const PUT = 'PUT';
 	const DELETE = 'DELETE';
-	const OPTIONS = 'OPTIONS';
+	const PATCH = 'PATCH';
 
 	/**
 	 * cURL handle
 	 * @var resource
 	 */
-	protected $_resource;
+	protected $resource;
 
 	/**
 	 * Response string from curl_exec
 	 * @var string
 	 */
-	protected $_response;
+	protected $response;
 
 	/**
 	 * URL to query
 	 * @var string
 	 */
-	protected $_url;
+	protected $url;
 
 	/**
 	 * HTTP Verb
 	 * @var string
 	 */
-	protected $_method;
+	protected $method;
 
 	/**
 	 * Key => value of data to send
 	 * @var array
 	 */
-	protected $_data = array();
+	protected $data = [];
 
 	/**
 	 * Key => value of headers to send
 	 * @var array
 	 */
-	protected $_headers = array();
+	protected $headers = [];
 
 	/**
 	 * Key => value of cookies to send
 	 * @var array
 	 */
-	protected $_cookies = array();
+	protected $cookies = [];
 
 	/**
 	 * User agent for query
 	 * @var string
 	 */
-	protected $_userAgent = 'alexsoft/curl';
+	protected $userAgent = 'alexsoft/curl';
 
 	/**
 	 * Array of available HTTP Verbs
 	 * @var array
 	 */
-	protected  $_availableMethods = array();
+	protected  $availableMethods = [self::GET, self::POST, self::HEAD, self::PUT, self::DELETE, self::PATCH];
 
 	/**
 	 * @param $url string URL for query
 	 */
-	public function __construct($url) {
-		$this->_availableMethods = array(static::GET, static::POST, static::HEAD, static::PUT, static::DELETE, static::OPTIONS);
-		$this->_url = $url;
+	public function __construct($url = NULL) {
+		$this->url = $url;
 	}
 
 	/**
@@ -90,8 +95,8 @@ class Curl {
 	 * @return $this
 	 */
 	public function addData(array $data) {
-		$this->_data = array_merge(
-			$this->_data,
+		$this->data = array_merge(
+			$this->data,
 			$data
 		);
 		return $this;
@@ -103,8 +108,8 @@ class Curl {
 	 * @return $this
 	 */
 	public function addHeaders(array $headers) {
-		$this->_headers = array_merge(
-			$this->_headers,
+		$this->headers = array_merge(
+			$this->headers,
 			$headers
 		);
 		return $this;
@@ -116,8 +121,8 @@ class Curl {
 	 * @return $this
 	 */
 	public function addCookies(array $cookies) {
-		$this->_cookies = array_merge(
-			$this->_cookies,
+		$this->cookies = array_merge(
+			$this->cookies,
 			$cookies
 		);
 		return $this;
@@ -133,8 +138,21 @@ class Curl {
 	 */
 	function __call($name, $arguments)
 	{
-		if (in_array(mb_strtoupper($name), $this->_availableMethods)) {
-			return $this->_request(mb_strtoupper($name));
+		if (!empty($arguments)) {
+			$url = $arguments[0];
+			if (is_string($url) && filter_var($url, FILTER_VALIDATE_URL)) {
+				$this->url = $url;
+			} else {
+				throw new \Exception('Wrong url. Give a correct url in a string format.');
+			}
+		} else {
+			if (is_null($this->url)) {
+				throw new \Exception('Provide a url either in constructor or while calling verb method.');
+			}
+		}
+
+		if (in_array(mb_strtoupper($name), $this->availableMethods)) {
+			return $this->request(mb_strtoupper($name));
 		} else {
 			throw new \Exception('Method ' . mb_strtoupper($name) . ' is not supported');
 		}
@@ -144,80 +162,80 @@ class Curl {
 	 * @param $method string method of query
 	 * @return array|NULL
 	 */
-	protected function _request($method) {
-		$this->_resource = curl_init();
-		$this->_method = $method;
-		$this->_prepareRequest();
-		$this->_response = curl_exec($this->_resource);
-		curl_close($this->_resource);
-		return $this->_parseResponse();
+	protected function request($method) {
+		$this->resource = curl_init();
+		$this->method = $method;
+		$this->prepareRequest();
+		$this->response = curl_exec($this->resource);
+		curl_close($this->resource);
+		return $this->parseResponse();
 	}
 
 	/**
 	 * Method which sets all the data, headers, cookies
 	 * and other options for the query
 	 */
-	protected function _prepareRequest() {
+	protected function prepareRequest() {
 		// Set data for GET queries
-		if ($this->_method === static::GET && !empty($this->_data)) {
-			$url = trim($this->_url, '/') . '?';
-			$url .= http_build_query($this->_data);
+		if ($this->method === static::GET && !empty($this->data)) {
+			$url = trim($this->url, '/') . '?';
+			$url .= http_build_query($this->data);
 		} else {
-			$url = $this->_url;
+			$url = $this->url;
 		}
 
 		// Set options
 		$options = array(
 			CURLOPT_URL => $url,
-			CURLOPT_POST => $this->_method === static::POST,
+			CURLOPT_POST => $this->method === static::POST,
 			CURLOPT_HEADER => TRUE,
-			CURLOPT_NOBODY => $this->_method === static::HEAD,
+			CURLOPT_NOBODY => $this->method === static::HEAD,
 			CURLOPT_RETURNTRANSFER => TRUE,
-			CURLOPT_USERAGENT => $this->_userAgent,
+			CURLOPT_USERAGENT => $this->userAgent,
 			CURLOPT_SSL_VERIFYPEER => FALSE
 		);
 
-		if (!in_array($this->_method, array(static::GET, static::HEAD, static::POST))) {
-			$options[CURLOPT_CUSTOMREQUEST] = $this->_method;
+		if (!in_array($this->method, [static::GET, static::HEAD, static::POST])) {
+			$options[CURLOPT_CUSTOMREQUEST] = $this->method;
 		}
 
 		// Set data for not GET queries
-		if (!empty($this->_data) && $this->_method !== static::GET) {
-			$options[CURLOPT_POSTFIELDS] = http_build_query($this->_data);
+		if (!empty($this->data) && $this->method !== static::GET) {
+			$options[CURLOPT_POSTFIELDS] = http_build_query($this->data);
 		}
 
 		// Set headers if needed
-		if (!empty($this->_headers)) {
-			$headersToSend = array();
-			foreach ($this->_headers as $key => $value) {
+		if (!empty($this->headers)) {
+			$headersToSend = [];
+			foreach ($this->headers as $key => $value) {
 				$headersToSend[] = "{$key}: {$value}";
 			}
 			$options[CURLOPT_HTTPHEADER] = $headersToSend;
 		}
 
 		// Set cookies if needed
-		if (!empty($this->_cookies)) {
-			$cookiesToSend = array();
-			foreach ($this->_cookies as $key => $value) {
+		if (!empty($this->cookies)) {
+			$cookiesToSend = [];
+			foreach ($this->cookies as $key => $value) {
 				$cookiesToSend[] = "{$key}={$value}";
 			}
 			$options[CURLOPT_COOKIE] = implode('; ', $cookiesToSend);
 		}
 
-		curl_setopt_array($this->_resource, $options);
+		curl_setopt_array($this->resource, $options);
 	}
 
 	/**
 	 * Method which parses cURL response
 	 * @return array|NULL
 	 */
-	protected function _parseResponse() {
-		if (isset($this->_response)) {
-			list($responseParts['headersString'], $responseParts['body']) = explode("\r\n\r\n", $this->_response, 2);
+	protected function parseResponse() {
+		if (isset($this->response)) {
+			list($responseParts['headersString'], $responseParts['body']) = explode("\r\n\r\n", $this->response, 2);
 			$responseParts['body'] = htmlspecialchars($responseParts['body']);
 			$headers = explode("\r\n", $responseParts['headersString']);
-			$cookies = array();
-			$first = TRUE;
+
+			$cookies = [];
 			if (preg_match_all( '/Set-Cookie: (.*?)=(.*?)(\n|;)/i', $responseParts['headersString'], $matches)) {
 				if (!empty($matches)) {
 					foreach ($matches[1] as $key => $value) {
@@ -226,9 +244,12 @@ class Curl {
 					$responseParts['cookies'] = $cookies;
 				}
 			}
+			unset($responseParts['headersString']);
+
+			$first = TRUE;
 			foreach ($headers as $header) {
 				if ($first) {
-					list($responseParts['protocol'], $responseParts['statusCode'], $responseParts['statusMessage']) = explode(' ', $header);
+					list($responseParts['protocol'], $responseParts['statusCode']) = explode(' ', $header, 2);
 					$first = FALSE;
 				} else {
 					$tmp = (explode(': ', $header));
@@ -243,5 +264,15 @@ class Curl {
 		} else {
 			return NULL;
 		}
+	}
+
+	/**
+	 * Validate that a value is a valid URL.
+	 * @param  mixed $value
+	 * @return bool
+	 */
+	protected function isValidUrl($value)
+	{
+		return filter_var($value, FILTER_VALIDATE_URL) !== false;
 	}
 }
