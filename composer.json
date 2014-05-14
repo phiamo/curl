@@ -1,6 +1,7 @@
 {
 	"name": "alexsoft/curl",
 	"description": "cURL wrapper",
+	"keywords": ["php", "curl"],
 	"license": "MIT",
 	"authors": [
 		{
@@ -8,7 +9,7 @@
 		}
 	],
 	"require": {
-		"php": ">=5.3.0",
+		"php": ">=5.4.0",
 		"lib-curl": "*"
 	},
 	"autoload": {
