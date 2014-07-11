@@ -202,7 +202,7 @@ class Curl
             CURLOPT_SSL_VERIFYPEER => false
         );
 
-        if (!in_array($this->method, [static::GET, static::HEAD, static::POST])) {
+        if (!in_array($this->method, array(static::GET, static::HEAD, static::POST))) {
             $options[CURLOPT_CUSTOMREQUEST] = $this->method;
         }
 
