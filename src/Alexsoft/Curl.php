@@ -57,19 +57,19 @@ class Curl
      * Key => value of data to send
      * @var array
      */
-    protected $data = [];
+    protected $data = array();
 
     /**
      * Key => value of headers to send
      * @var array
      */
-    protected $headers = [];
+    protected $headers = array();
 
     /**
      * Key => value of cookies to send
      * @var array
      */
-    protected $cookies = [];
+    protected $cookies = array();
 
     /**
      * User agent for query
@@ -81,7 +81,7 @@ class Curl
      * Array of available HTTP Verbs
      * @var array
      */
-    protected $availableMethods = [self::GET, self::POST, self::HEAD, self::PUT, self::DELETE, self::PATCH];
+    protected $availableMethods = array(self::GET, self::POST, self::HEAD, self::PUT, self::DELETE, self::PATCH);
 
     /**
      * @param $url string URL for query
@@ -213,7 +213,7 @@ class Curl
 
         // Set headers if needed
         if (!empty($this->headers)) {
-            $headersToSend = [];
+            $headersToSend = array();
             foreach ($this->headers as $key => $value) {
                 $headersToSend[] = "{$key}: {$value}";
             }
@@ -222,7 +222,7 @@ class Curl
 
         // Set cookies if needed
         if (!empty($this->cookies)) {
-            $cookiesToSend = [];
+            $cookiesToSend = array();
             foreach ($this->cookies as $key => $value) {
                 $cookiesToSend[] = "{$key}={$value}";
             }
@@ -243,7 +243,7 @@ class Curl
             $responseParts['body'] = htmlspecialchars($responseParts['body']);
             $headers = explode("\r\n", $responseParts['headersString']);
 
-            $cookies = [];
+            $cookies = array();
             if (preg_match_all('/Set-Cookie: (.*?)=(.*?)(\n|;)/i', $responseParts['headersString'], $matches)) {
                 if (!empty($matches)) {
                     foreach ($matches[1] as $key => $value) {
